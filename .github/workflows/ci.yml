@@ -1,0 +1,54 @@
+name: Flutter CI
+
+on:
+  # 主分支提交时触发
+  push:
+    branches:
+      - main
+  # 主分支 PR 时触发
+  pull_request:
+    branches:
+      - main
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  analyze-and-test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+
+      - name: Install Dependencies
+        run: flutter pub get
+
+      - name: Static Analyze
+        run: flutter analyze
+
+      - name: Run Tests If Exists
+        shell: bash
+        run: |
+          # test 目录可能被忽略，存在时才执行测试
+          if [ -d test ] && find test -type f -name "*_test.dart" | grep -q .; then
+            flutter test
+          else
+            echo "No test files found, skip flutter test."
+          fi
