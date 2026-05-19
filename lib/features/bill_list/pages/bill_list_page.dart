@@ -103,35 +103,45 @@ class _BillListPageState extends ConsumerState<BillListPage> {
 
     return RefreshIndicator(
       onRefresh: () => ref.read(billListControllerProvider.notifier).refresh(),
-      child: CustomScrollView(
+      child: RawScrollbar(
         controller: _scrollController,
-        scrollCacheExtent: const ScrollCacheExtent.viewport(
-          PaginationConstants.preloadScreenFactor,
+        thumbVisibility: true,
+        interactive: true,
+        minThumbLength: 36,
+        thickness: 3,
+        radius: const Radius.circular(4),
+        thumbColor: const Color(0xFF9CA3AF).withValues(alpha: 0.65),
+        // RawScrollbar 会按内容高度自动缩短右侧滑块。
+        child: CustomScrollView(
+          controller: _scrollController,
+          scrollCacheExtent: const ScrollCacheExtent.viewport(
+            PaginationConstants.preloadScreenFactor,
+          ),
+          physics: const AlwaysScrollableScrollPhysics(),
+          slivers: <Widget>[
+            SliverToBoxAdapter(
+              child: SizedBox(
+                height: state.windowOffset * PaginationConstants.billRowExtent,
+              ),
+            ),
+            SliverFixedExtentList(
+              itemExtent: PaginationConstants.billRowExtent,
+              delegate: SliverChildBuilderDelegate((
+                BuildContext context,
+                int index,
+              ) {
+                final item = state.items[index];
+                return BillRow(key: ValueKey<String>(item.id), bill: item);
+              }, childCount: state.items.length),
+            ),
+            SliverToBoxAdapter(
+              child: SizedBox(
+                height: PaginationConstants.billRowExtent,
+                child: _buildFooter(state),
+              ),
+            ),
+          ],
         ),
-        physics: const AlwaysScrollableScrollPhysics(),
-        slivers: <Widget>[
-          SliverToBoxAdapter(
-            child: SizedBox(
-              height: state.windowOffset * PaginationConstants.billRowExtent,
-            ),
-          ),
-          SliverFixedExtentList(
-            itemExtent: PaginationConstants.billRowExtent,
-            delegate: SliverChildBuilderDelegate((
-              BuildContext context,
-              int index,
-            ) {
-              final item = state.items[index];
-              return BillRow(key: ValueKey<String>(item.id), bill: item);
-            }, childCount: state.items.length),
-          ),
-          SliverToBoxAdapter(
-            child: SizedBox(
-              height: PaginationConstants.billRowExtent,
-              child: _buildFooter(state),
-            ),
-          ),
-        ],
       ),
     );
   }
