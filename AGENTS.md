@@ -31,7 +31,6 @@ Flutter Android
 - Riverpod：管理列表状态、仓储依赖和页面生命周期。
 - Drift + SQLite：本地缓存、索引查询、去重和离线可读。
 - Intl：金额和日期展示格式化。
-- Flutter DevTools：Profile 模式下验证帧耗时、内存和网络请求。
 
 ## 目录建议
 
