@@ -8,6 +8,7 @@ import '../../data/services/local/bill_local_data_source.dart';
 import '../../data/services/remote/bill_remote_data_source.dart';
 import '../../data/services/remote/dio_bill_remote_data_source.dart';
 import '../../data/services/remote/fake_bill_data_source.dart';
+import '../../data/services/remote/fake_bill_network_mode.dart';
 import '../../domain/repositories/bill_repository.dart';
 
 final dioProvider = Provider<Dio>((Ref ref) {
@@ -22,8 +23,17 @@ final dioProvider = Provider<Dio>((Ref ref) {
 
 final useFakeDataSourceProvider = Provider<bool>((Ref ref) => true);
 
+final fakeBillNetworkModeProvider = StateProvider<FakeBillNetworkMode>(
+  (Ref ref) => FakeBillNetworkMode.online,
+);
+
 final fakeBillDataSourceProvider = Provider<FakeBillDataSource>((Ref ref) {
-  return FakeBillDataSource(totalCount: 100000);
+  // 默认关闭随机失败，保证开发切片启动后稳定可滑动。
+  return FakeBillDataSource(
+    totalCount: 100000,
+    failureRate: 0,
+    mode: ref.watch(fakeBillNetworkModeProvider),
+  );
 });
 
 final remoteDataSourceProvider = Provider<BillRemoteDataSource>((Ref ref) {

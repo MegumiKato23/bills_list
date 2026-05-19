@@ -6,6 +6,7 @@ import '../../../core/constants/pagination_constants.dart';
 import '../states/bill_list_state.dart';
 import '../view_models/bill_list_controller.dart';
 import '../widgets/bill_row.dart';
+import '../widgets/fake_network_mode_menu.dart';
 import '../widgets/offline_banner.dart';
 
 class BillListPage extends ConsumerStatefulWidget {
@@ -56,7 +57,10 @@ class _BillListPageState extends ConsumerState<BillListPage> {
     final state = ref.watch(billListControllerProvider);
 
     return Scaffold(
-      appBar: AppBar(title: const Text('账单列表')),
+      appBar: AppBar(
+        title: const Text('账单列表'),
+        actions: const <Widget>[FakeNetworkModeMenu()],
+      ),
       body: Column(
         children: <Widget>[
           if (state.offline) const OfflineBanner(),
@@ -68,6 +72,10 @@ class _BillListPageState extends ConsumerState<BillListPage> {
 
   Widget _buildContent(BuildContext context, BillListState state) {
     if (!state.initialized && state.items.isEmpty) {
+      return const Center(child: CircularProgressIndicator());
+    }
+
+    if (state.isRefreshing && state.items.isEmpty) {
       return const Center(child: CircularProgressIndicator());
     }
 

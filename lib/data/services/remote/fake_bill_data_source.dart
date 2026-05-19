@@ -6,25 +6,28 @@ import '../../models/bill_cursor.dart';
 import '../../models/bill_dto.dart';
 import '../../models/bill_page_dto.dart';
 import 'bill_remote_data_source.dart';
+import 'fake_bill_network_mode.dart';
 
 class FakeBillDataSource implements BillRemoteDataSource {
   FakeBillDataSource({
     this.totalCount = 100000,
     this.latency = const Duration(milliseconds: 180),
     this.failureRate = 0.04,
-    this._offline = false,
+    bool offline = false,
+    FakeBillNetworkMode mode = FakeBillNetworkMode.online,
     int seed = 42,
-  }) : _random = Random(seed);
+  }) : mode = offline ? FakeBillNetworkMode.offline : mode,
+       _random = Random(seed);
 
   final int totalCount;
   final Duration latency;
   final double failureRate;
   final Random _random;
 
-  bool _offline;
+  FakeBillNetworkMode mode;
 
   set offline(bool value) {
-    _offline = value;
+    mode = value ? FakeBillNetworkMode.offline : FakeBillNetworkMode.online;
   }
 
   @override
@@ -42,13 +45,7 @@ class FakeBillDataSource implements BillRemoteDataSource {
       );
     }
 
-    if (_offline) {
-      throw DioException(
-        requestOptions: RequestOptions(path: '/fake/bills/list'),
-        type: DioExceptionType.connectionError,
-        message: '网络不可用，已切换离线数据',
-      );
-    }
+    _throwIfModeBlocks(cursor);
 
     if (_random.nextDouble() < failureRate) {
       throw DioException(
@@ -81,6 +78,28 @@ class FakeBillDataSource implements BillRemoteDataSource {
       hasMore: hasMore,
       serverTime: DateTime.now().toUtc().toIso8601String(),
     );
+  }
+
+  void _throwIfModeBlocks(String? cursor) {
+    if (mode == FakeBillNetworkMode.offline) {
+      throw DioException(
+        requestOptions: RequestOptions(path: '/fake/bills/list'),
+        type: DioExceptionType.connectionError,
+        message: '网络不可用，已切换离线数据',
+      );
+    }
+
+    if (mode == FakeBillNetworkMode.loadMoreFailure && cursor != null) {
+      throw DioException(
+        requestOptions: RequestOptions(path: '/fake/bills/list'),
+        type: DioExceptionType.badResponse,
+        response: Response(
+          requestOptions: RequestOptions(path: '/fake/bills/list'),
+          statusCode: 503,
+        ),
+        message: '模拟分页失败，请点击重试',
+      );
+    }
   }
 
   BillDto _buildBill(int rank) {

@@ -1,6 +1,8 @@
+import 'dart:async';
 import 'dart:math';
 
 import 'package:bills_list/app/di/providers.dart';
+import 'package:bills_list/data/services/remote/fake_bill_network_mode.dart';
 import 'package:bills_list/domain/entities/bill_list_item.dart';
 import 'package:bills_list/domain/repositories/bill_repository.dart';
 import 'package:bills_list/features/bill_list/pages/bill_list_page.dart';
@@ -54,6 +56,27 @@ void main() {
     expect(find.text('暂无账单数据'), findsOneWidget);
   });
 
+  testWidgets('无缓存首次刷新中展示加载态', (WidgetTester tester) async {
+    final refreshCompleter = Completer<SyncResult>();
+    final repository = _PageFakeRepository(
+      items: <BillListItem>[],
+      refreshHandler: () => refreshCompleter.future,
+    );
+    final container = _createContainer(repository);
+
+    await tester.pumpWidget(_buildTestApp(container));
+    await tester.pump();
+    await tester.pump();
+
+    expect(find.byType(CircularProgressIndicator), findsOneWidget);
+    expect(find.text('暂无账单数据'), findsNothing);
+
+    refreshCompleter.complete(
+      SyncResult.success(nextCursor: null, hasMore: false),
+    );
+    await tester.pump();
+  });
+
   testWidgets('分页失败展示底部重试文案', (WidgetTester tester) async {
     final repository = _PageFakeRepository(
       items: List<BillListItem>.generate(40, buildBillItem),
@@ -74,6 +97,30 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('加载失败，点击重试'), findsOneWidget);
+  });
+
+  testWidgets('开发菜单可切换模拟网络模式', (WidgetTester tester) async {
+    final repository = _PageFakeRepository(
+      items: List<BillListItem>.generate(30, buildBillItem),
+    );
+    final container = _createContainer(repository);
+
+    await tester.pumpWidget(_buildTestApp(container));
+    await tester.pump();
+    await tester.pump();
+
+    final beforeRefreshCalls = repository.refreshCalls;
+    await tester.tap(find.byTooltip('模拟网络状态'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('离线').last);
+    await tester.pump();
+    await tester.pump();
+
+    expect(
+      container.read(fakeBillNetworkModeProvider),
+      FakeBillNetworkMode.offline,
+    );
+    expect(repository.refreshCalls, greaterThan(beforeRefreshCalls));
   });
 }
 
@@ -101,6 +148,7 @@ class _PageFakeRepository implements BillRepository {
     required List<BillListItem> items,
     SyncResult? refreshResult,
     SyncResult? loadMoreResult,
+    this.refreshHandler,
   }) : _store = List<BillListItem>.from(items),
        refreshResult =
            refreshResult ??
@@ -112,6 +160,8 @@ class _PageFakeRepository implements BillRepository {
   final List<BillListItem> _store;
   final SyncResult refreshResult;
   final SyncResult loadMoreResult;
+  final Future<SyncResult> Function()? refreshHandler;
+  int refreshCalls = 0;
 
   @override
   Future<List<BillListItem>> readWindow({
@@ -127,6 +177,11 @@ class _PageFakeRepository implements BillRepository {
 
   @override
   Future<SyncResult> refreshFirstPage({required int pageSize}) async {
+    refreshCalls += 1;
+    final handler = refreshHandler;
+    if (handler != null) {
+      return handler();
+    }
     return refreshResult;
   }
 

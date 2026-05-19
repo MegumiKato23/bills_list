@@ -1,4 +1,5 @@
 import 'package:bills_list/data/services/remote/fake_bill_data_source.dart';
+import 'package:bills_list/data/services/remote/fake_bill_network_mode.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -53,6 +54,29 @@ void main() {
             (error) => error.type,
             'type',
             DioExceptionType.connectionError,
+          ),
+        ),
+      );
+    });
+
+    test('分页失败模式只拦截下一页请求', () async {
+      final dataSource = FakeBillDataSource(
+        totalCount: 120,
+        latency: Duration.zero,
+        failureRate: 0,
+        mode: FakeBillNetworkMode.loadMoreFailure,
+      );
+
+      final firstPage = await dataSource.fetchBills(limit: 80);
+      expect(firstPage.items.length, 80);
+
+      expect(
+        () => dataSource.fetchBills(limit: 80, cursor: firstPage.nextCursor),
+        throwsA(
+          isA<DioException>().having(
+            (DioException error) => error.type,
+            'type',
+            DioExceptionType.badResponse,
           ),
         ),
       );

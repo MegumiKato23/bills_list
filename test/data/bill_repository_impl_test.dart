@@ -2,6 +2,7 @@ import 'package:bills_list/data/repositories/bill_repository_impl.dart';
 import 'package:bills_list/data/services/local/app_database.dart';
 import 'package:bills_list/data/services/local/bill_local_data_source.dart';
 import 'package:bills_list/data/services/remote/fake_bill_data_source.dart';
+import 'package:bills_list/data/services/remote/fake_bill_network_mode.dart';
 import 'package:drift/native.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -71,6 +72,23 @@ void main() {
       final cached = await repository.readWindow(limit: 80, offset: 0);
       expect(cached.length, 80);
       expect(cached.first.id, isNotEmpty);
+    });
+
+    test('分页失败不清空已缓存列表', () async {
+      final initial = await repository.refreshFirstPage(pageSize: 80);
+      expect(initial.success, true);
+
+      remoteDataSource.mode = FakeBillNetworkMode.loadMoreFailure;
+      final loadMoreResult = await repository.loadMore(
+        cursor: initial.nextCursor!,
+        pageSize: 80,
+      );
+
+      expect(loadMoreResult.success, false);
+      expect(loadMoreResult.offline, false);
+
+      final cached = await repository.readWindow(limit: 120, offset: 0);
+      expect(cached.length, 80);
     });
   });
 }
