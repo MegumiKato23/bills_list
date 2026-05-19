@@ -103,17 +103,19 @@ class FakeBillDataSource implements BillRemoteDataSource {
   }
 
   BillDto _buildBill(int rank) {
-    // rank 越小表示时间越新。
-    final groupIndex = rank ~/ 3;
-    final occurredAt = _baseTime.subtract(Duration(minutes: groupIndex));
+    // 用“基础间隔 + 抖动”生成递减时间，日期分布更自然且顺序稳定。
+    final minutesFromBase =
+        rank * _averageGapMinutes + _pseudoRandom(rank, _gapJitterMinutes);
+    final occurredAt = _baseTime.subtract(Duration(minutes: minutesFromBase));
     final idNumber = totalCount - rank;
 
-    final type = rank.isEven ? 'expense' : 'income';
+    final type = rank % 5 == 0 ? 'income' : 'expense';
     final category = _categories[rank % _categories.length];
+    final amountCents = 100 + _pseudoRandom(rank, 59900);
 
     return BillDto(
       id: 'bill_${idNumber.toString().padLeft(6, '0')}',
-      amountCents: 500 + (rank % 30000),
+      amountCents: amountCents,
       type: type,
       categoryName: category.name,
       categoryIcon: category.icon,
@@ -122,6 +124,11 @@ class FakeBillDataSource implements BillRemoteDataSource {
       description: '模拟账单 #$idNumber',
       updatedAt: occurredAt.add(const Duration(seconds: 30)).toIso8601String(),
     );
+  }
+
+  int _pseudoRandom(int rank, int maxExclusive) {
+    final value = (rank * 1103515245 + 12345) & 0x7fffffff;
+    return value % maxExclusive;
   }
 
   String _buildNextCursor(int nextIndex) {
@@ -135,7 +142,10 @@ class FakeBillDataSource implements BillRemoteDataSource {
   }
 }
 
-final DateTime _baseTime = DateTime.utc(2026, 5, 19, 12);
+const int _averageGapMinutes = 430;
+const int _gapJitterMinutes = 120;
+
+final DateTime _baseTime = DateTime.utc(2026, 5, 19, 22);
 
 const List<_BillCategory> _categories = <_BillCategory>[
   _BillCategory(name: '餐饮', icon: 'food', color: '#EF4444'),

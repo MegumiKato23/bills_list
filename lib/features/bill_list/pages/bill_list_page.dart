@@ -3,8 +3,10 @@ import 'package:flutter/rendering.dart' show ScrollCacheExtent;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/constants/pagination_constants.dart';
+import '../states/bill_list_display_entry.dart';
 import '../states/bill_list_state.dart';
 import '../view_models/bill_list_controller.dart';
+import '../widgets/bill_date_header.dart';
 import '../widgets/bill_row.dart';
 import '../widgets/fake_network_mode_menu.dart';
 import '../widgets/offline_banner.dart';
@@ -124,15 +126,14 @@ class _BillListPageState extends ConsumerState<BillListPage> {
                 height: state.windowOffset * PaginationConstants.billRowExtent,
               ),
             ),
-            SliverFixedExtentList(
-              itemExtent: PaginationConstants.billRowExtent,
+            SliverList(
               delegate: SliverChildBuilderDelegate((
                 BuildContext context,
                 int index,
               ) {
-                final item = state.items[index];
-                return BillRow(key: ValueKey<String>(item.id), bill: item);
-              }, childCount: state.items.length),
+                final entry = state.displayEntries[index];
+                return _buildEntry(entry);
+              }, childCount: state.displayEntries.length),
             ),
             SliverToBoxAdapter(
               child: SizedBox(
@@ -144,6 +145,22 @@ class _BillListPageState extends ConsumerState<BillListPage> {
         ),
       ),
     );
+  }
+
+  Widget _buildEntry(BillListDisplayEntry entry) {
+    switch (entry) {
+      case BillDateHeaderEntry():
+        return BillDateHeader(
+          key: ValueKey<String>(entry.stableKey),
+          entry: entry,
+        );
+      case BillRowEntry():
+        return BillRow(
+          key: ValueKey<String>(entry.stableKey),
+          bill: entry.bill,
+          position: entry.position,
+        );
+    }
   }
 
   Widget _buildFooter(BillListState state) {

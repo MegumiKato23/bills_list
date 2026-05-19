@@ -5,6 +5,7 @@ import '../../domain/repositories/bill_repository.dart';
 import '../models/bill_page_dto.dart';
 import '../services/local/bill_local_data_source.dart';
 import '../services/remote/bill_remote_data_source.dart';
+import '../services/remote/fake_bill_data_source.dart';
 
 class BillRepositoryImpl implements BillRepository {
   BillRepositoryImpl({
@@ -42,6 +43,10 @@ class BillRepositoryImpl implements BillRepository {
         limit: limit,
         cursor: cursor,
       );
+      // Fake 数据规则变动时，首页刷新后重建缓存，避免新旧分布混在一起。
+      if (cursor == null && _remoteDataSource is FakeBillDataSource) {
+        await _localDataSource.clearAll();
+      }
       await _localDataSource.upsertItems(_mapItems(page));
       return SyncResult.success(
         nextCursor: page.nextCursor,

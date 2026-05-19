@@ -13,6 +13,9 @@ class PaginationConstants {
   // 触发预加载时保留的屏幕数。
   static const double preloadScreenFactor = 2.5;
 
-  // 固定行高，方便滚动窗口稳定。
-  static const double billRowExtent = 72;
+  // 固定行高，方便滚动窗口稳定，同时给账单卡片留出呼吸感。
+  static const double billRowExtent = 88;
+
+  // 日期分组头高度。
+  static const double billDateHeaderExtent = 56;
 }

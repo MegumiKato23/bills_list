@@ -1,6 +1,7 @@
 import 'package:flutter/foundation.dart';
 
 import '../../../domain/entities/bill_list_item.dart';
+import 'bill_list_display_entry.dart';
 
 @immutable
 class BillListState {
@@ -15,9 +16,11 @@ class BillListState {
     required this.loadMoreError,
     required this.windowOffset,
     required this.initialized,
+    required this.displayEntries,
   });
 
   final List<BillListItem> items;
+  final List<BillListDisplayEntry> displayEntries;
   final String? nextCursor;
   final bool hasMore;
   final bool isRefreshing;
@@ -42,6 +45,7 @@ class BillListState {
       loadMoreError: null,
       windowOffset: 0,
       initialized: false,
+      displayEntries: <BillListDisplayEntry>[],
     );
   }
 
@@ -60,8 +64,12 @@ class BillListState {
     int? windowOffset,
     bool? initialized,
   }) {
+    final nextItems = items ?? this.items;
     return BillListState(
-      items: items ?? this.items,
+      items: nextItems,
+      displayEntries: items == null
+          ? displayEntries
+          : buildBillListDisplayEntries(nextItems),
       nextCursor: resetCursor ? null : (nextCursor ?? this.nextCursor),
       hasMore: hasMore ?? this.hasMore,
       isRefreshing: isRefreshing ?? this.isRefreshing,
