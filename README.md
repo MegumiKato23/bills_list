@@ -30,7 +30,7 @@ lib/
 
 ## 核心能力
 
-- 列表渲染：`ListView.builder` 懒加载，仅构建可见区域。
+- 列表渲染：`CustomScrollView` + `SliverList` 懒加载，仅构建可见区域，支持窗口滑动与按日期分组。
 - 分页策略：游标分页（按 `occurredAt DESC, id DESC` 稳定排序）。
 - 本地优先：先读 SQLite，再刷新远端并回写缓存。
 - 弱网可用：保留已加载内容，分页失败仅在底部提示重试。

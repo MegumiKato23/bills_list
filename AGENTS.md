@@ -74,10 +74,10 @@ lib/
 
 ### 列表页面
 
-- 使用 `ListView.builder`，`itemCount` 为当前列表长度，只构建可见区域。
-- `cacheExtent` 设置为视口高度的 2~3 倍（如 `MediaQuery.of(context).size.height * 2`），确保快速滑动时预构建充足但不浪费内存。
-- 账单行高度尽量稳定。若 UI 固定高度，优先使用 `itemExtent`（默认 72.0）；若需要适配大字体，可使用受控的最小高度。
-- `BillRow` 必须拆成独立 widget，以账单 `id` 作为 `key`，避免整页状态变化导致复杂 item 反复重建。
+- 使用 `CustomScrollView` + `SliverList` + `SliverChildBuilderDelegate` 组合，子项按需构建只占可见区域。顶部 `SliverToBoxAdapter` 动态占位模拟窗口滑动，底部同样用 `SliverToBoxAdapter` 放置加载/重试组件。
+- `scrollCacheExtent` 设为视口高度的 2.5 倍 (`ScrollCacheExtent.viewport(2.5)`)，确保快速滑动时预构建充足但不浪费内存。
+- 账单行 `SizedBox(height: 88)` 定高，日期分组头 `SizedBox(height: 56)` 定高。`SliverList` 支持可变高度，用于按日期分组的卡片样式布局。
+- `BillRow` 和 `BillDateHeader` 均拆成独立 widget，以 `stableKey` 作为 `ValueKey`，避免整页状态变化导致复杂 item 反复重建。
 - 不在 `build()` 中做排序、日期解析、金额复杂格式化、颜色解析或网络请求。
 
 ### 状态控制器
